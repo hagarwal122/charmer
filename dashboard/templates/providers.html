@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_chip.html" import chip, meter %}
+{% block sub %}Each provider account: its key, today's limits, its pairs, and free models not in the pool yet.{% endblock %}
+{% block content %}
+<div class="grid-cards">
+{% for p in s.providers %}
+  {% set st = {"ok": "serving", "no key": "nokey", "pulled": "pulled"}[p.status] %}
+  <article class="card provider">
+    <header class="card-head">
+      <h2>{{ p.name }}</h2>
+      {{ chip(st, "key set" if p.status == "ok" else p.status) }}
+    </header>
+    <dl class="kv">
+      <dt>Requests today</dt><dd>{{ meter(p.day.requests, "Requests today") }}</dd>
+      <dt>Tokens today</dt><dd>{{ meter(p.day.tokens, "Tokens today") }}</dd>
+      {% if p.day.neurons %}<dt>Neurons today</dt><dd>{{ meter(p.day.neurons, "Neurons today") }}</dd>{% endif %}
+      {% if p.day.eval_requests.limit %}<dt>Eval share</dt><dd>{{ meter(p.day.eval_requests, "Eval requests today") }}</dd>{% endif %}
+      <dt>Resets</dt><dd class="tnum">{{ p.resets_at|when if p.resets_at else "—" }}</dd>
+      <dt>Pairs</dt><dd>{% for id in p.pairs %}<span class="mono tag" translate="no">{{ id }}</span>{% else %}<span class="faint">none configured</span>{% endfor %}</dd>
+    </dl>
+    {% if p.available_models %}
+    <details class="more"><summary>{{ p.available_models|length }} free model{{ "s" if p.available_models|length != 1 }} not in the pool</summary>
+      <ul class="plain">{% for m in p.available_models %}<li class="mono" translate="no">{{ m }}</li>{% endfor %}</ul>
+      <p class="faint">From the latest discovery report. Adding one is a reviewed change.</p>
+    </details>
+    {% endif %}
+    {% if p.source %}<p class="faint source">Limits: {{ p.source }}</p>{% endif %}
+  </article>
+{% endfor %}
+</div>
+{% endblock %}

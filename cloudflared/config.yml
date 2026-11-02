@@ -1,0 +1,11 @@
+# The tunnel's routes (locally managed: `make tunnel-create`, docs/guide.md §7). No hostname here: the DNS records
+# made by `make tunnel-route` decide which names reach this tunnel; these rules decide what each request may reach.
+# Only inference and liveliness go to LiteLLM. Admin routes, /metrics, readiness and the dashboard are a 404 at the
+# edge (the auth hook refuses the admin and metrics keys through the tunnel too). CFG-28 checks this file.
+credentials-file: /etc/cloudflared/credentials.json
+ingress:
+  - path: ^/v1/(chat/completions|embeddings|models)$
+    service: http://litellm:4000
+  - path: ^/health/liveliness$
+    service: http://litellm:4000
+  - service: http_status:404

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block sub %}Open alerts first. Each kind is raised at most once an hour; set ALERT_WEBHOOK_URL to also get them by webhook.{% endblock %}
+{% block content %}
+{% set open = s.alerts|selectattr("cleared", "none")|list %}
+{% set done = s.alerts|rejectattr("cleared", "none")|list %}
+<section class="card" aria-labelledby="open-title">
+  <header class="card-head"><h2 id="open-title">Open <span class="faint tnum">{{ open|length }}</span></h2></header>
+  {% if not open %}<p class="empty">Nothing needs you. The pool is quiet.</p>{% else %}
+  <ul class="alerts">
+    {% for a in open %}
+    <li class="alert">
+      <div><p class="alert-kind mono">{{ a.kind }}</p><p>{{ a.message }}</p><p class="faint small tnum">{{ a.ts|when }} · {{ a.ts|ago }}</p></div>
+      <form method="post" action="/alerts/clear"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ a.id }}"><button class="btn btn-small" type="submit" aria-label="Clear alert {{ a.kind }}">Clear</button></form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</section>
+{% if done %}
+<section class="card" aria-labelledby="done-title">
+  <header class="card-head"><h2 id="done-title">Cleared</h2></header>
+  <ul class="alerts alerts-done">
+    {% for a in done[:50] %}<li class="alert"><div><p class="alert-kind mono">{{ a.kind }}</p><p>{{ a.message }}</p><p class="faint small tnum">{{ a.ts|when }}</p></div></li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,140 @@
+# The pool. LiteLLM's own format. Limits and declared groups live in limits.yaml; keys in .env.
+# A pair joins chat only after it passes make live-check (LIVE-06 included) and make live-matrix (LIVE-10); until then it is pair-* only.
+# Each deployment names its provider account in model_info.account (never guessed from the route prefix).
+
+x-common: &common
+  weight: 10
+  order: 1
+  timeout: 25
+  stream_timeout: 15
+
+x-or-nemotron-super-vl: &or-nemotron-super-vl
+  <<: *common
+  model: openrouter/nvidia/nemotron-3.5-super-vl:free
+  api_key: os.environ/OPENROUTER_API_KEY
+  cooldown_time: 1800
+x-or-nemotron-ultra: &or-nemotron-ultra
+  <<: *common
+  model: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+  api_key: os.environ/OPENROUTER_API_KEY
+  cooldown_time: 1800
+x-or-gemma-4-31b: &or-gemma-4-31b
+  <<: *common
+  model: openrouter/google/gemma-4-31b-it:free
+  api_key: os.environ/OPENROUTER_API_KEY
+  cooldown_time: 1800
+x-gemini-flash-lite-31: &gemini-flash-lite-31
+  <<: *common
+  model: gemini/gemini-3.1-flash-lite        # native route, not openai/ compat
+  api_key: os.environ/GEMINI_API_KEY
+  cooldown_time: 1800
+x-gemini-flash-lite-35: &gemini-flash-lite-35
+  <<: *common
+  model: gemini/gemini-3.5-flash-lite
+  api_key: os.environ/GEMINI_API_KEY
+  cooldown_time: 1800
+x-mistral-ministral-14b: &mistral-ministral-14b
+  <<: *common
+  model: mistral/ministral-14b-2512           # the Free plan serves only ministral-*
+  api_key: os.environ/MISTRAL_API_KEY
+  cooldown_time: 60
+x-zai-glm-47-flash: &zai-glm-47-flash
+  <<: *common
+  model: zai/glm-4.7-flash
+  api_key: os.environ/ZAI_API_KEY
+  cooldown_time: 1800
+  max_parallel_requests: 1
+x-nim-mistral-large-4: &nim-mistral-large-4
+  <<: *common
+  model: nvidia_nim/mistralai/mistral-large-4-1t-a52b
+  api_key: os.environ/NVIDIA_NIM_API_KEY
+  cooldown_time: 60
+x-nim-minimax-m31-flash: &nim-minimax-m31-flash
+  <<: *common
+  model: nvidia_nim/minimaxai/minimax-m3.1-flash
+  api_key: os.environ/NVIDIA_NIM_API_KEY
+  cooldown_time: 60
+x-nim-nemotron-ultra: &nim-nemotron-ultra
+  <<: *common
+  model: nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b
+  api_key: os.environ/NVIDIA_NIM_API_KEY
+  cooldown_time: 60
+x-nim-nemotron-super-vl: &nim-nemotron-super-vl
+  <<: *common
+  model: nvidia_nim/nvidia/nemotron-3.5-super-vl-120b-a12b
+  api_key: os.environ/NVIDIA_NIM_API_KEY
+  cooldown_time: 60
+x-groq-gpt-oss-120b: &groq-gpt-oss-120b
+  <<: *common
+  model: groq/openai/gpt-oss-120b
+  api_key: os.environ/GROQ_API_KEY
+  order: 2                                    # overflow only: serves when every order-1 member is out
+  cooldown_time: 1800
+x-cf-gpt-oss-120b: &cf-gpt-oss-120b
+  <<: *common
+  model: cloudflare/@cf/openai/gpt-oss-120b
+  api_key: os.environ/CF_API_TOKEN
+  api_base: os.environ/CF_AI_API_BASE
+  weight: 2
+  cooldown_time: 3600
+
+model_list:
+  - { model_name: pair-or-nemotron-3.5-super-vl, litellm_params: *or-nemotron-super-vl, model_info: { id: pair-or-nemotron-3.5-super-vl, account: openrouter } }
+  - { model_name: pair-or-nemotron-3-ultra, litellm_params: *or-nemotron-ultra, model_info: { id: pair-or-nemotron-3-ultra, account: openrouter } }
+  - { model_name: pair-or-gemma-4-31b, litellm_params: *or-gemma-4-31b, model_info: { id: pair-or-gemma-4-31b, account: openrouter } }
+  - { model_name: pair-gemini-flash-lite-3.1, litellm_params: *gemini-flash-lite-31, model_info: { id: pair-gemini-flash-lite-3.1, account: gemini } }
+  - { model_name: pair-gemini-flash-lite-3.5, litellm_params: *gemini-flash-lite-35, model_info: { id: pair-gemini-flash-lite-3.5, account: gemini } }
+  - { model_name: pair-mistral-ministral-14b, litellm_params: *mistral-ministral-14b, model_info: { id: pair-mistral-ministral-14b, account: mistral } }
+  - { model_name: pair-zai-glm-4.7-flash, litellm_params: *zai-glm-47-flash, model_info: { id: pair-zai-glm-4.7-flash, account: zai } }
+  - { model_name: pair-nim-mistral-large-4, litellm_params: *nim-mistral-large-4, model_info: { id: pair-nim-mistral-large-4, account: nvidia } }
+  - { model_name: pair-nim-minimax-m3.1-flash, litellm_params: *nim-minimax-m31-flash, model_info: { id: pair-nim-minimax-m3.1-flash, account: nvidia } }
+  - { model_name: pair-nim-nemotron-3-ultra, litellm_params: *nim-nemotron-ultra, model_info: { id: pair-nim-nemotron-3-ultra, account: nvidia } }
+  - { model_name: pair-nim-nemotron-3.5-super-vl, litellm_params: *nim-nemotron-super-vl, model_info: { id: pair-nim-nemotron-3.5-super-vl, account: nvidia } }
+  - { model_name: pair-groq-gpt-oss-120b, litellm_params: *groq-gpt-oss-120b, model_info: { id: pair-groq-gpt-oss-120b, account: groq } }
+  - { model_name: pair-cf-gpt-oss-120b, litellm_params: *cf-gpt-oss-120b, model_info: { id: pair-cf-gpt-oss-120b, account: cloudflare } }
+  # chat: one twin per admitted pair (same params, id without pair-). Admitted 2026-10-28 after live-check and live-matrix.
+  - { model_name: chat, litellm_params: *or-nemotron-super-vl, model_info: { id: or-nemotron-3.5-super-vl, account: openrouter } }
+  - { model_name: chat, litellm_params: *or-nemotron-ultra, model_info: { id: or-nemotron-3-ultra, account: openrouter } }
+  # mistral-ministral-14b left chat 2026-11-01 (owner): it served the most Mate check misses across four runs. Its pair stays.
+  - { model_name: chat, litellm_params: *nim-mistral-large-4, model_info: { id: nim-mistral-large-4, account: nvidia } }   # admitted 2026-10-31: live-check and live-matrix 40/40
+  - { model_name: chat, litellm_params: *nim-minimax-m31-flash, model_info: { id: nim-minimax-m3.1-flash, account: nvidia } }   # admitted 2026-11-01: live-check, live-matrix (4 rate-limited cells replayed 200)
+  - { model_name: chat, litellm_params: *nim-nemotron-super-vl, model_info: { id: nim-nemotron-3.5-super-vl, account: nvidia } }   # admitted 2026-11-01: live-check, live-matrix
+  - { model_name: chat, litellm_params: *groq-gpt-oss-120b, model_info: { id: groq-gpt-oss-120b, account: groq } }   # order 2: overflow
+  - model_name: embed-bge-m3
+    litellm_params:
+      model: openai/@cf/baai/bge-m3            # LiteLLM's cloudflare/ provider has no embeddings route
+      api_base: os.environ/CF_AI_API_BASE      # whole URL incl. account id
+      api_key: os.environ/CF_API_TOKEN
+      timeout: 15
+    model_info: { id: embed-bge-m3, mode: embedding, account: cloudflare }
+
+router_settings:
+  routing_strategy: simple-shuffle
+  optional_pre_call_checks: [session_affinity]   # never enforce_model_rate_limits: it 429s the client (spike R1)
+  deployment_affinity_ttl_seconds: 1800
+  num_retries: 2                                 # one-member groups get 0 at render time (free_guard.py)
+  retry_policy:
+    RateLimitErrorRetries: 2
+    TimeoutErrorRetries: 1
+    InternalServerErrorRetries: 1
+    AuthenticationErrorRetries: 1
+    BadRequestErrorRetries: 0
+    ContentPolicyViolationErrorRetries: 0
+  allowed_fails_policy:
+    RateLimitErrorAllowedFails: 0
+    TimeoutErrorAllowedFails: 3
+    InternalServerErrorAllowedFails: 3
+  cooldown_time: 60
+
+litellm_settings:
+  callbacks: [prometheus, charmer_plugin.instance]   # the plugin must stay before session affinity
+  enable_post_custom_auth_checks: true
+  telemetry: false
+  drop_params: false
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  custom_auth: charmer_auth.user_api_key_auth
+  custom_auth_run_common_checks: true
+  allow_client_side_credentials: false
+  background_health_checks: false

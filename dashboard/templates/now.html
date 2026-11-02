@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% from "_chip.html" import chip, meter %}
+{% block heading %}Now{% endblock %}
+{% block sub %}Is the pool up, who is serving, and how much of today is left.{% endblock %}
+{% block content %}
+{% set k = s.kpis %}
+<section class="kpis" aria-label="Today at a glance">
+  <article class="card kpi">
+    <h2 class="kpi-label">Requests Today</h2>
+    <p class="kpi-value tnum" data-bind="kpis.requests_today.value" data-format="num">{{ k.requests_today.value|num }}</p>
+    <svg class="spark" data-spark="kpis.requests_today.series" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <p class="kpi-delta" data-delta="kpis.requests_today.vs_yesterday">{% if k.requests_today.vs_yesterday is none %}<span class="faint">— No data for yesterday</span>{% else %}{{ '%+.0f'|format(k.requests_today.vs_yesterday) }}% vs this time yesterday{% endif %}</p>
+  </article>
+  <article class="card kpi">
+    <h2 class="kpi-label">Tokens Today</h2>
+    <p class="kpi-value tnum" data-bind="kpis.tokens_today.value" data-format="num">{{ k.tokens_today.value|num }}</p>
+    <svg class="spark" data-spark="kpis.tokens_today.series" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <p class="kpi-delta" data-delta="kpis.tokens_today.vs_yesterday">{% if k.tokens_today.vs_yesterday is none %}<span class="faint">— No data for yesterday</span>{% else %}{{ '%+.0f'|format(k.tokens_today.vs_yesterday) }}% vs this time yesterday{% endif %}</p>
+  </article>
+  <article class="card kpi kpi-accent">
+    <h2 class="kpi-label">Pool Left Today</h2>
+    <p class="kpi-value tnum" data-bind="kpis.pool_left.value" data-format="pct">{% if k.pool_left.value is none %}—{% else %}{{ k.pool_left.value|round|int }}%{% endif %}</p>
+    <p class="kpi-delta faint" data-bind="kpis.pool_left.account" data-format="tightest">{% if k.pool_left.account %}tightest: {{ k.pool_left.account }}{% else %}no day limits set{% endif %}</p>
+  </article>
+  <article class="card kpi">
+    <h2 class="kpi-label">Pairs Serving</h2>
+    <p class="kpi-value tnum"><span data-bind="kpis.pairs.serving">{{ k.pairs.serving }}</span><span class="kpi-of"> of <span data-bind="kpis.pairs.total">{{ k.pairs.total }}</span></span></p>
+    <p class="kpi-delta faint"><span data-bind="kpis.pairs.near">{{ k.pairs.near }}</span> near limit · <span data-bind="kpis.pairs.filtered">{{ k.pairs.filtered }}</span> filtered · <span data-bind="kpis.pairs.cooling">{{ k.pairs.cooling }}</span> cooling · <span data-bind="kpis.pairs.pulled">{{ k.pairs.pulled }}</span> pulled</p>
+  </article>
+  <article class="card kpi">
+    <h2 class="kpi-label">Busy Answers Today</h2>
+    <p class="kpi-value tnum" data-bind="kpis.busy_today" data-format="num">{{ k.busy_today|num }}</p>
+    <svg class="spark spark-warn" data-spark="kpis.busy_series" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <p class="kpi-delta faint">429s sent to consumers</p>
+  </article>
+</section>
+
+<section class="card chart-card" aria-labelledby="by-pair-title">
+  <header class="card-head">
+    <h2 id="by-pair-title">Requests by Pair</h2>
+    <div class="seg" role="group" aria-label="Range">
+      <button type="button" class="seg-btn" data-range="today" aria-pressed="true">Today</button>
+      <button type="button" class="seg-btn" data-range="48h" aria-pressed="false">48 Hours</button>
+    </div>
+  </header>
+  <div class="chart" data-chart="by_pair" role="img" aria-label="Requests per hour, stacked by pair">
+    {% if not s.by_pair.series %}<p class="empty">No data in this window. Calls appear here as soon as consumers use the pool.</p>{% endif %}
+  </div>
+  <ul class="legend" data-legend="by_pair"></ul>
+</section>
+
+<div class="grid-2">
+  {% for g in s.groups %}
+  <section class="card" aria-labelledby="group-{{ loop.index }}">
+    <header class="card-head">
+      <h2 id="group-{{ loop.index }}"><code translate="no">{{ g.name }}</code></h2>
+      <a class="explore" href="/pairs">Pairs ›</a>
+    </header>
+    {% if not g.members %}
+    <p class="empty">No member yet. Calls to <code translate="no">{{ g.name }}</code> answer busy until a pair is admitted.</p>
+    {% else %}
+    <table class="table">
+      <thead><tr><th scope="col">Pair</th><th scope="col">State</th><th scope="col">Today</th><th scope="col">Resets</th></tr></thead>
+      <tbody>
+      {% for m in g.members %}
+      <tr>
+        <td data-label="Pair"><span class="mono" translate="no">{{ m.id }}</span><br><span class="faint">{{ m.account }}</span></td>
+        <td data-label="State">{{ chip(m.state, m.label) }}</td>
+        <td data-label="Today">{{ meter(m.tightest, "Today's use against the tightest limit") }}</td>
+        <td data-label="Resets" class="tnum">{{ m.day.resets_at|clock }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>
+
+<section class="card" aria-labelledby="recent-title">
+  <header class="card-head"><h2 id="recent-title">Latest Calls</h2><a class="explore" href="/calls">All calls ›</a></header>
+  {% if not s.recent %}
+  <p class="empty">No calls yet.</p>
+  {% else %}
+  <table class="table">
+    <thead><tr><th scope="col">Time</th><th scope="col">Key</th><th scope="col">Group</th><th scope="col">Served by</th><th scope="col">Status</th><th scope="col" class="num">Latency</th><th scope="col" class="num">Tokens</th></tr></thead>
+    <tbody>
+    {% for c in s.recent[:10] %}
+    <tr>
+      <td data-label="Time" class="tnum">{{ c.ts|when }}</td>
+      <td data-label="Key">{{ c.key or "—" }}</td>
+      <td data-label="Group"><code translate="no">{{ c.group or "—" }}</code></td>
+      <td data-label="Served by"><span class="mono" translate="no">{{ c.deployment or "router" }}</span>{% if c.diverted %} <span class="chip chip-near"><span class="chip-dot" aria-hidden="true"></span>diverted</span>{% endif %}</td>
+      <td data-label="Status">{% if c.status and c.status < 400 %}<span class="ok tnum">{{ c.status }}</span>{% else %}<span class="err tnum">{{ c.status }}</span>{% endif %}</td>
+      <td data-label="Latency" class="num tnum">{{ c.latency_ms|num }} ms</td>
+      <td data-label="Tokens" class="num tnum">{{ c.tokens|num }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+<script type="application/json" id="initial-state">{{ s|tojson }}</script>
+{% endblock %}

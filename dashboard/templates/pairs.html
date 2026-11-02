@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_chip.html" import chip, meter %}
+{% block sub %}Every deployment: this minute, today, what the provider last said, and Pull or Unpull.{% endblock %}
+{% block content %}
+<section class="card" aria-label="Pairs">
+  <table class="table table-pairs">
+    <thead><tr>
+      <th scope="col">Pair</th><th scope="col">State</th><th scope="col">This minute</th><th scope="col">Today</th>
+      <th scope="col">Provider says</th><th scope="col" class="num">Weight · order</th><th scope="col"><span class="sr-only">Actions</span></th>
+    </tr></thead>
+    <tbody>
+    {% for p in s.pairs %}
+    <tr>
+      <td data-label="Pair"><span class="mono" translate="no">{{ p.id }}</span><br><span class="faint">{{ p.account }} · <code translate="no">{{ p.group }}</code></span></td>
+      <td data-label="State">{{ chip(p.state, p.label) }}{% if p.pulled %}<br><span class="faint small">{{ p.pulled.reason }} ({{ p.pulled.who }})</span>{% endif %}</td>
+      <td data-label="This minute">{{ meter(p.minute.requests, "Requests this minute") }}</td>
+      <td data-label="Today">{{ meter(p.tightest or p.day.requests, "Today against the tightest limit") }}<br><span class="faint small">resets {{ p.day.resets_at|clock }}</span></td>
+      <td data-label="Provider says">
+        {% if p.provider %}
+          {% if p.provider.expired %}<span class="faint">expired reading</span>
+          {% else %}<span class="tnum">{{ p.provider.remaining_requests if p.provider.remaining_requests is not none else "—" }}</span> <span class="faint">left</span>{% endif %}
+          <br><span class="faint small">{{ p.provider.age_s }} s ago</span>
+        {% else %}<span class="faint">nothing yet</span>{% endif %}
+      </td>
+      <td data-label="Weight · order" class="num tnum">{{ p.weight if p.weight is not none else "—" }} · {{ p.order if p.order is not none else "—" }}</td>
+      <td data-label="Actions" class="actions">
+        {% if p.state == "nokey" %}<span class="faint small">no key</span>
+        {% elif p.pulled and p.can_unpull %}
+        <form method="post" action="/pairs/unpull"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ p.pulled.target }}"><button class="btn btn-small" type="submit">Unpull</button></form>
+        {% elif p.pulled %}<span class="faint small">lifted by its guard</span>
+        {% else %}
+        <form method="post" action="/pairs/pull"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ p.id }}"><button class="btn btn-small btn-quiet" type="submit" aria-label="Pull {{ p.id }}">Pull</button></form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

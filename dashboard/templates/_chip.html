@@ -1,0 +1,10 @@
+{% macro chip(state, label) -%}<span class="chip chip-{{ state }}"><span class="chip-dot" aria-hidden="true"></span>{{ label }}</span>{%- endmacro %}
+{% macro meter(x, title) -%}
+{%- if x and x.limit is not none -%}
+<div class="meter" role="meter" aria-label="{{ title }}" aria-valuemin="0" aria-valuemax="{{ x.limit }}" aria-valuenow="{{ x.used }}">
+  <span class="meter-text tnum">{{ x.used|num }} <span class="faint">of {{ x.limit|num }}{% if x.scope == "account" %} · shared by the account{% endif %}</span></span>
+  <div class="meter-track"><div class="meter-fill{% if x.pct >= 100 %} is-full{% elif x.pct >= 80 %} is-high{% endif %}" style="--fill: {{ [x.pct, 100]|min }}%"></div></div>
+</div>
+{%- elif x -%}<span class="tnum">{{ x.used|num }}</span> <span class="faint">no limit</span>
+{%- else -%}<span class="faint">—</span>{%- endif -%}
+{%- endmacro %}

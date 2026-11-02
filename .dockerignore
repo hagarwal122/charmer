@@ -1,0 +1,9 @@
+# The dashboard image copies only these; .env, data and backups never enter the build context.
+*
+!dashboard/requirements.txt
+!dashboard/app.py
+!dashboard/state.py
+!dashboard/auth.py
+!dashboard/templates
+!dashboard/static
+!plugin/store.py

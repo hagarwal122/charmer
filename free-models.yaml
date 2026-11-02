@@ -1,0 +1,22 @@
+# Models known to be free, per provider account. A new entry is a reviewed diff with a date and a source.
+openrouter:
+  - { model: "openrouter/nvidia/nemotron-3.5-super-vl:free", date: 2026-10-27, source: "openrouter.ai/models ?max_price=0" }
+  - { model: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free", date: 2026-10-27, source: "openrouter.ai/models ?max_price=0" }
+  - { model: "openrouter/google/gemma-4-31b-it:free", date: 2026-10-27, source: "openrouter.ai/models ?max_price=0" }
+gemini:
+  - { model: gemini/gemini-3.1-flash-lite, date: 2026-10-27, source: "ai.google.dev/gemini-api/docs/pricing (free tier, billing off)" }
+  - { model: gemini/gemini-3.5-flash-lite, date: 2026-10-27, source: "ai.google.dev/gemini-api/docs/pricing (free tier, billing off)" }
+mistral:
+  - { model: mistral/ministral-14b-2512, date: 2026-10-28, source: "console.mistral.ai Free plan; served with the Free plan key" }
+zai:
+  - { model: zai/glm-4.7-flash, date: 2026-10-28, source: "served with balance 0" }
+nvidia:
+  - { model: nvidia_nim/mistralai/mistral-large-4-1t-a52b, date: 2026-10-31, source: "build.nvidia.com trial; served to the owner's key (Kimi K2.6 is listed but not served to it)" }
+  - { model: nvidia_nim/minimaxai/minimax-m3.1-flash, date: 2026-11-01, source: "build.nvidia.com trial; probe with a tool call answered in 2.6 s" }
+  - { model: nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b, date: 2026-11-01, source: "build.nvidia.com trial; probe with a tool call answered in 3.6 s" }
+  - { model: nvidia_nim/nvidia/nemotron-3.5-super-vl-120b-a12b, date: 2026-11-01, source: "build.nvidia.com trial; probe with a tool call answered in 0.7 s" }
+groq:
+  - { model: groq/openai/gpt-oss-120b, date: 2026-10-28, source: "console.groq.com free plan; served 2026-10-28" }
+cloudflare:
+  - { model: "cloudflare/@cf/openai/gpt-oss-120b", date: 2026-10-28, source: "Workers AI free 10,000 neurons a day" }
+  - { model: "openai/@cf/baai/bge-m3", date: 2026-10-27, source: "Workers AI free 10,000 neurons a day" }

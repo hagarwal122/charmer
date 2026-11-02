@@ -1,0 +1,109 @@
+# Stub models, filed under the account each test deployment names.
+acct-x:
+- date: '2026-10-28'
+  model: openai/ok-a@x1
+  source: test stub
+cloudflare:
+- date: '2026-10-28'
+  model: openai/cf-chat@cf1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/cf-chat@cf2
+  source: test stub
+- date: '2026-10-28'
+  model: openai/emb@emb1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/strict-null@st2
+  source: test stub
+gemini:
+- date: '2026-10-28'
+  model: openai/pay-402@gm1
+  source: test stub
+hdr:
+- date: '2026-10-28'
+  model: openai/hdr-a@h1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/hdr-b@h2
+  source: test stub
+openrouter:
+- date: '2026-10-28'
+  model: openai/ok-a@or1:free
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-b@or2:free
+  source: test stub
+stub:
+- date: '2026-10-28'
+  model: openai/auth-401@auth1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/err-500@dry-500
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@d1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@empty1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@fail-ok
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@paid-ok
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@pair-ok-a
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@q1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@rpm-a
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@slow-ok
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-a@two-a
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-b@cf-ok
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-b@day-b
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-b@q2
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-b@rpm-b
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-b@s2
+  source: test stub
+- date: '2026-10-28'
+  model: openai/ok-b@two-b
+  source: test stub
+- date: '2026-10-28'
+  model: openai/rl-429-60@retry1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/rl-429-once@s1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/rl-429@dry-rl
+  source: test stub
+- date: '2026-10-28'
+  model: openai/rl-429@fail-rl
+  source: test stub
+- date: '2026-10-28'
+  model: openai/slow@slow1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/strict@st1
+  source: test stub
+- date: '2026-10-28'
+  model: openai/tools-long-id@tools1
+  source: test stub

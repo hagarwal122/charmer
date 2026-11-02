@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="{{ theme_bg.dark }}" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="{{ theme_bg.light }}" media="(prefers-color-scheme: light)">
+  <title>Sign In · Charmer</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="login-body">
+<main class="login" id="main">
+  <div class="login-card">
+    <h1 class="sr-only">Sign In to Charmer</h1>
+    <div class="login-brand">{% include "_mark.html" %}<span class="wordmark" translate="no">charmer</span></div>
+    <p class="login-lede">Every free tier, in tune.</p>
+    <form method="post" action="/login" class="stack">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"
+             required autofocus value="{{ username or '' }}"
+             {% if error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required
+             {% if error %}aria-invalid="true" aria-describedby="login-error"{% endif %}>
+      {% if error %}<p class="field-error" id="login-error" role="alert">{{ error }}</p>{% endif %}
+      <button class="btn btn-primary" type="submit">Sign In</button>
+    </form>
+    <p class="faint login-foot">Self-hosted. Sign in with <code translate="no">DASHBOARD_USERNAME</code> and <code translate="no">DASHBOARD_PASSWORD</code> from your <code translate="no">.env</code>.</p>
+  </div>
+</main>
+</body>
+</html>

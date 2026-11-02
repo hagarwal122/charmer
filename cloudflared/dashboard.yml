@@ -1,0 +1,6 @@
+# The dashboard's own tunnel, optional (docs/guide.md §7). Its own name and credentials, so the inference tunnel's
+# routes (config.yml) stay exactly as tested. Everything here goes to the dashboard, behind its password and login
+# throttle; LiteLLM is never reached from this tunnel. CFG-28 and CFG-30 check this file.
+credentials-file: /etc/cloudflared/dashboard-credentials.json
+ingress:
+  - service: http://dashboard:8080

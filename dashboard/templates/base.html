@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="{{ theme_bg.dark }}" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="{{ theme_bg.light }}" media="(prefers-color-scheme: light)">
+  <title>{% block title %}{{ page|capitalize }}{% endblock %} · Charmer</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body data-page="{{ page }}">
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+  <aside class="sidebar" aria-label="Charmer">
+    <a class="brand" href="/" aria-label="Charmer home">{% include "_mark.html" %}<span class="wordmark" translate="no">charmer</span></a>
+    <nav class="nav" aria-label="Pages">
+      <ul>
+        {% for key, href, label in pages %}
+        <li><a href="{{ href }}" {% if page == key %}aria-current="page"{% endif %}>
+          <span>{{ label }}</span>
+          {% if key == "alerts" and s.alerts_open %}<span class="badge tnum" aria-label="{{ s.alerts_open }} open">{{ s.alerts_open }}</span>{% endif %}
+        </a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+    <div class="sidebar-foot">
+      <a class="faint" href="/brand">Brand</a>
+      <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link" type="submit">Sign Out</button></form>
+    </div>
+  </aside>
+  <div class="main-col">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>{% block heading %}{{ page|capitalize }}{% endblock %}</h1>
+        <p class="sub">{% block sub %}{% endblock %}</p>
+      </div>
+      <div class="topbar-tools">
+        {% if s.litellm.up is false %}
+        <span class="chip chip-pulled" data-bind-litellm><span class="chip-dot" aria-hidden="true"></span>LiteLLM unreachable</span>
+        {% elif s.litellm.up %}
+        <span class="chip chip-serving" data-bind-litellm><span class="chip-dot" aria-hidden="true"></span>LiteLLM up</span>
+        {% else %}
+        <span class="chip chip-nokey" data-bind-litellm><span class="chip-dot" aria-hidden="true"></span>LiteLLM checking</span>
+        {% endif %}
+        <span class="tz faint" title="Times are shown in this zone">{{ tzname }}</span>
+        <span class="updated faint" aria-live="polite" data-updated>live</span>
+      </div>
+    </header>
+    <main id="main" tabindex="-1">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+<script src="/static/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Placeholder values for make test-boot (CFG-03): every provider key set, nothing real, no call leaves the host.
+OPENROUTER_KEY_URL=http://127.0.0.1:9/
+LITELLM_MASTER_KEY=sk-boot-placeholder-litellm-master-key-000000000000000000
+DASHBOARD_USERNAME=charmer-owner
+DASHBOARD_PASSWORD=boot-placeholder-password
+DASHBOARD_SESSION_SECRET=boot-placeholder-session-secret-000000000000
+CHARMER_METRICS_KEY=sk-boot-placeholder-charmer-metrics-key-000000000000000000
+ALERT_WEBHOOK_URL=
+CLOUDFLARE_TUNNEL_ID=
+CLOUDFLARE_DASHBOARD_TUNNEL_ID=
+CHARMER_API_KEY=sk-boot-placeholder-charmer-key-example-app-000000000000000000
+OPENROUTER_API_KEY=boot-placeholder-openrouter-api-key
+GEMINI_API_KEY=boot-placeholder-gemini-api-key
+MISTRAL_API_KEY=boot-placeholder-mistral-api-key
+GROQ_API_KEY=boot-placeholder-groq-api-key
+ZAI_API_KEY=boot-placeholder-zai-api-key
+NVIDIA_NIM_API_KEY=boot-placeholder-nvidia-nim-api-key
+CF_API_TOKEN=boot-placeholder-cf-api-token
+CF_AI_API_BASE=http://127.0.0.1:9/ai/v1
+CF_ACCOUNT_ID=boot-placeholder-cf-account-id
+CF_ANALYTICS_TOKEN=boot-placeholder-cf-analytics-token
+CHARMER_DASHBOARD_TZ=UTC

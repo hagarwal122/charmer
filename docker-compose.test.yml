@@ -1,0 +1,45 @@
+# Smoke overlay: the stub provider, the stub pool and test keys. Used only by make test-smoke.
+services:
+  litellm:
+    env_file: !override [tests/env.test]
+    environment:
+      CHARMER_CONFIG: /app/conf/config.yaml
+      CHARMER_LIMITS: /app/conf/limits.yaml
+      STUB_SLOW_SECONDS: "30"
+    volumes: !override
+      - ./rendered-test:/app/rendered:ro
+      - ./plugin:/app/plugin:ro
+      - ./tests/config.test.yaml:/app/conf/config.yaml:ro
+      - ./tests/limits.test.yaml:/app/conf/limits.yaml:ro
+      - data:/data
+    ports: !reset []
+    depends_on: [stub]
+  dashboard:
+    environment:
+      DASHBOARD_USERNAME: "charmer-owner"
+      DASHBOARD_PASSWORD: "test-dashboard-password-1234"
+      DASHBOARD_SESSION_SECRET: "test-session-secret-0000000000000000000000"
+      CHARMER_METRICS_KEY: "sk-test-metrics-000000000000000000000000000000000000000"
+      CHARMER_DASHBOARD_TZ: "Asia/Kolkata"
+      DASHBOARD_HEALTH_SECONDS: "5"
+    volumes: !override
+      - data:/data
+      - ./rendered-test:/app/rendered:ro
+      - ./reports:/app/reports:ro
+      - ./tests/config.test.yaml:/app/conf/config.yaml:ro
+      - ./tests/limits.test.yaml:/app/conf/limits.yaml:ro
+    ports: !override ["127.0.0.1:18080:8080"]
+  stub:
+    image: ghcr.io/berriai/litellm:v1.106.4@sha256:c169fb3adc514fcf210377c203f3de406d54f10bfdacf13948a4a839db9af7de
+    entrypoint: ["python", "/app/tests/stub_provider.py"]
+    environment: { STUB_SLOW_SECONDS: "30" }
+    volumes: ["./tests:/app/tests:ro"]
+  smoke:
+    image: ghcr.io/berriai/litellm:v1.106.4@sha256:c169fb3adc514fcf210377c203f3de406d54f10bfdacf13948a4a839db9af7de
+    entrypoint: ["python", "-m", "unittest"]
+    command: ["-v", "tests.smoke"]
+    working_dir: /w
+    env_file: [tests/env.test]
+    environment: { LITELLM: "http://litellm:4000", STUB: "http://stub:9000" }
+    volumes: [".:/w:ro", "./reports:/w/reports", "data:/data"]
+    profiles: ["smoke"]

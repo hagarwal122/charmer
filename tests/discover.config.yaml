@@ -1,0 +1,10 @@
+# A small pool for the discovery cells (DSC-01..03): one configured model per provider, all in the stub's lists.
+model_list:
+  - { model_name: pair-or, litellm_params: { model: "openrouter/nvidia/nemotron-3.5-super-vl:free" }, model_info: { id: pair-or, account: openrouter } }
+  - { model_name: pair-gm, litellm_params: { model: gemini/gemini-3.1-flash-lite }, model_info: { id: pair-gm, account: gemini } }
+  - { model_name: pair-mi, litellm_params: { model: mistral/ministral-14b-2512 }, model_info: { id: pair-mi, account: mistral } }
+  - { model_name: pair-gq, litellm_params: { model: groq/openai/gpt-oss-120b }, model_info: { id: pair-gq, account: groq } }
+  - { model_name: pair-nv, litellm_params: { model: nvidia_nim/mistralai/mistral-large-4-1t-a52b }, model_info: { id: pair-nv, account: nvidia } }
+  - { model_name: pair-cf, litellm_params: { model: "cloudflare/@cf/openai/gpt-oss-120b" }, model_info: { id: pair-cf, account: cloudflare } }
+  - { model_name: embed-bge-m3, litellm_params: { model: "openai/@cf/baai/bge-m3" }, model_info: { id: embed-bge-m3, mode: embedding, account: cloudflare } }
+  - { model_name: pair-za, litellm_params: { model: zai/glm-4.7-flash }, model_info: { id: pair-za, account: zai } }

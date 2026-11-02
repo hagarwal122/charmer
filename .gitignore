@@ -1,0 +1,15 @@
+.env
+*.env
+.env.*
+!.env.example
+__pycache__/
+.venv/
+backups/
+reports/
+data/
+rendered/
+__pycache__/
+rendered-test/
+rendered-boot/
+cloudflared/*.json
+cloudflared/cert.pem

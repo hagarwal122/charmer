@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block sub %}The last 1,000 calls. Token counts and ids only, never prompt text.{% endblock %}
+{% block content %}
+{% set rows = s.recent %}
+{% if filters.key %}{% set rows = rows|selectattr("key", "equalto", filters.key)|list %}{% endif %}
+{% if filters.group %}{% set rows = rows|selectattr("group", "equalto", filters.group)|list %}{% endif %}
+{% if filters.deployment %}{% set rows = rows|selectattr("deployment", "equalto", filters.deployment)|list %}{% endif %}
+{% if filters.status == "ok" %}{% set rows = rows|selectattr("status", "lt", 400)|list %}{% elif filters.status == "error" %}{% set rows = rows|selectattr("status", "ge", 400)|list %}{% endif %}
+<form class="card filters" method="get" action="/calls" aria-label="Filter calls">
+  {% for field, label, values in [("key", "Key", s.recent|map(attribute="key")|reject("none")|unique|sort),
+                                  ("group", "Group", s.recent|map(attribute="group")|reject("none")|unique|sort),
+                                  ("deployment", "Served by", s.recent|map(attribute="deployment")|reject("none")|unique|sort)] %}
+  <label class="field"><span>{{ label }}</span>
+    <select name="{{ field }}"><option value="">All</option>
+      {% for v in values if v %}<option value="{{ v }}" {% if filters[field] == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
+    </select></label>
+  {% endfor %}
+  <label class="field"><span>Status</span>
+    <select name="status"><option value="">All</option>
+      <option value="ok" {% if filters.status == "ok" %}selected{% endif %}>Succeeded</option>
+      <option value="error" {% if filters.status == "error" %}selected{% endif %}>Failed or busy</option>
+    </select></label>
+  <button class="btn" type="submit">Filter</button>
+  <a class="link" href="/calls">Clear</a>
+</form>
+<section class="card" aria-label="Calls">
+  {% if not rows %}<p class="empty">No calls match.</p>{% else %}
+  <table class="table table-long">
+    <thead><tr><th scope="col">Time</th><th scope="col">Key</th><th scope="col">Group</th><th scope="col">Served by</th><th scope="col">Status</th><th scope="col" class="num">Latency</th><th scope="col" class="num">Tokens</th></tr></thead>
+    <tbody>
+    {% for c in rows %}
+    <tr>
+      <td data-label="Time" class="tnum">{{ c.ts|when }}</td>
+      <td data-label="Key">{{ c.key or "—" }}</td>
+      <td data-label="Group"><code translate="no">{{ c.group or "—" }}</code></td>
+      <td data-label="Served by"><span class="mono" translate="no">{{ c.deployment or "router" }}</span>{% if c.diverted %} <span class="chip chip-near"><span class="chip-dot" aria-hidden="true"></span>diverted</span>{% endif %}</td>
+      <td data-label="Status">{% if c.status and c.status < 400 %}<span class="ok tnum">{{ c.status }}</span>{% else %}<span class="err tnum">{{ c.status }}</span>{% endif %}</td>
+      <td data-label="Latency" class="num tnum">{{ c.latency_ms|num }} ms</td>
+      <td data-label="Tokens" class="num tnum">{{ c.tokens|num }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% endblock %}

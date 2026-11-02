@@ -1,0 +1,73 @@
+# Smoke-test pool: every deployment points at the stub provider. Mirrors config.yaml's router settings,
+# with short cooldowns and timeouts. Model strings carry "@<id>" so each deployment has its own counters.
+x-stub: &stub { api_base: os.environ/STUB_BASE, api_key: os.environ/STUB_KEY, weight: 10, order: 1, timeout: 4, stream_timeout: 4, cooldown_time: 5 }
+
+model_list:
+  - { model_name: g-two, litellm_params: { <<: *stub, model: openai/ok-a@two-a }, model_info: { id: two-a, account: stub } }
+  - { model_name: g-two, litellm_params: { <<: *stub, model: openai/ok-b@two-b }, model_info: { id: two-b, account: stub } }
+  - { model_name: g-fail, litellm_params: { <<: *stub, model: openai/rl-429@fail-rl }, model_info: { id: fail-rl, account: stub } }
+  - { model_name: g-fail, litellm_params: { <<: *stub, model: openai/ok-a@fail-ok }, model_info: { id: fail-ok, account: stub } }
+  - { model_name: g-dry, litellm_params: { <<: *stub, model: openai/rl-429@dry-rl }, model_info: { id: dry-rl, account: stub } }
+  - { model_name: g-dry, litellm_params: { <<: *stub, model: openai/err-500@dry-500 }, model_info: { id: dry-500, account: stub } }
+  - { model_name: g-rpm, litellm_params: { <<: *stub, model: openai/ok-a@rpm-a }, model_info: { id: rpm-a, account: stub } }
+  - { model_name: g-rpm, litellm_params: { <<: *stub, model: openai/ok-b@rpm-b }, model_info: { id: rpm-b, account: stub } }
+  - { model_name: g-sticky, litellm_params: { <<: *stub, model: openai/rl-429-once@s1 }, model_info: { id: s1, account: stub } }
+  - { model_name: g-sticky, litellm_params: { <<: *stub, model: openai/ok-b@s2 }, model_info: { id: s2, account: stub } }
+  - { model_name: g-auth, litellm_params: { <<: *stub, model: openai/auth-401@auth1 }, model_info: { id: auth1, account: stub } }
+  - { model_name: pair-ok-a, litellm_params: { <<: *stub, model: openai/ok-a@pair-ok-a }, model_info: { id: pair-ok-a, account: stub } }
+  - { model_name: g-tools, litellm_params: { <<: *stub, model: openai/tools-long-id@tools1 }, model_info: { id: tools1, account: stub } }
+  - { model_name: embed-test, litellm_params: { api_base: os.environ/STUB_BASE, api_key: os.environ/STUB_KEY, model: openai/emb@emb1, timeout: 4 }, model_info: { id: emb1, mode: embedding, account: cloudflare } }
+  - { model_name: g-paid, litellm_params: { <<: *stub, model: openai/pay-402@gm1 }, model_info: { id: gm1, account: gemini } }
+  - { model_name: g-paid, litellm_params: { <<: *stub, model: openai/ok-a@paid-ok }, model_info: { id: paid-ok, account: stub } }
+  - { model_name: g-cf, litellm_params: { <<: *stub, model: openai/cf-chat@cf1 }, model_info: { id: cf1, account: cloudflare } }
+  - { model_name: g-cf, litellm_params: { <<: *stub, model: openai/ok-b@cf-ok }, model_info: { id: cf-ok, account: stub } }
+  - { model_name: g-cf-only, litellm_params: { <<: *stub, model: openai/cf-chat@cf2 }, model_info: { id: cf2, account: cloudflare } }
+  - { model_name: g-hdr, litellm_params: { <<: *stub, model: openai/hdr-a@h1 }, model_info: { id: h1, account: hdr } }
+  - { model_name: g-hdr, litellm_params: { <<: *stub, model: openai/hdr-b@h2 }, model_info: { id: h2, account: hdr } }
+  - { model_name: g-day, litellm_params: { <<: *stub, model: openai/ok-a@d1 }, model_info: { id: d1, account: stub } }
+  - { model_name: g-day, litellm_params: { <<: *stub, model: openai/ok-b@day-b }, model_info: { id: day-b, account: stub } }
+  - { model_name: g-acct, litellm_params: { <<: *stub, model: openai/ok-a@x1 }, model_info: { id: x1, account: acct-x } }
+  - { model_name: pair-x1, litellm_params: { <<: *stub, model: openai/ok-a@x1 }, model_info: { id: pair-x1, account: acct-x } }
+  - { model_name: g-or, litellm_params: { <<: *stub, model: "openai/ok-a@or1:free" }, model_info: { id: or1, account: openrouter } }
+  - { model_name: g-or, litellm_params: { <<: *stub, model: "openai/ok-b@or2:free" }, model_info: { id: or2, account: openrouter } }
+  - { model_name: pair-or1, litellm_params: { <<: *stub, model: "openai/ok-a@or1:free" }, model_info: { id: pair-or1, account: openrouter } }
+  - { model_name: pair-or2, litellm_params: { <<: *stub, model: "openai/ok-b@or2:free" }, model_info: { id: pair-or2, account: openrouter } }
+  - { model_name: g-groq, litellm_params: { <<: *stub, model: openai/ok-a@q1 }, model_info: { id: q1, account: stub } }
+  - { model_name: g-groq, litellm_params: { <<: *stub, model: openai/ok-b@q2, order: 2 }, model_info: { id: q2, account: stub } }
+  - { model_name: g-retry, litellm_params: { <<: *stub, model: openai/rl-429-60@retry1 }, model_info: { id: retry1, account: stub } }
+  - { model_name: g-empty, litellm_params: { <<: *stub, model: openai/ok-a@empty1, api_key: os.environ/EMPTY_KEY }, model_info: { id: empty1, account: stub } }
+  - { model_name: g-strict, litellm_params: { <<: *stub, model: openai/strict@st1 }, model_info: { id: st1, account: stub } }
+  - { model_name: g-strict-cf, litellm_params: { <<: *stub, model: openai/strict-null@st2 }, model_info: { id: st2, account: cloudflare } }
+  - { model_name: g-slow, litellm_params: { <<: *stub, model: openai/slow@slow1 }, model_info: { id: slow1, account: stub } }
+  - { model_name: g-slow, litellm_params: { <<: *stub, model: openai/ok-a@slow-ok }, model_info: { id: slow-ok, account: stub } }
+
+router_settings:
+  routing_strategy: simple-shuffle
+  optional_pre_call_checks: [session_affinity]
+  deployment_affinity_ttl_seconds: 1800
+  num_retries: 2
+  retry_policy:
+    RateLimitErrorRetries: 2
+    TimeoutErrorRetries: 1
+    InternalServerErrorRetries: 1
+    AuthenticationErrorRetries: 1
+    BadRequestErrorRetries: 0
+    ContentPolicyViolationErrorRetries: 0
+  allowed_fails_policy:
+    RateLimitErrorAllowedFails: 0
+    TimeoutErrorAllowedFails: 3
+    InternalServerErrorAllowedFails: 3
+  cooldown_time: 5
+
+litellm_settings:
+  callbacks: [prometheus, charmer_plugin.instance]
+  enable_post_custom_auth_checks: true
+  telemetry: false
+  drop_params: false
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  custom_auth: charmer_auth.user_api_key_auth
+  custom_auth_run_common_checks: true
+  allow_client_side_credentials: false
+  background_health_checks: false

@@ -1,0 +1,126 @@
+/* Charmer design tokens (C19). The only file with literal colours, fonts, sizes and shadows: every page uses these.
+   Brand: dashboard/brand/README.md. Dark first, a designed light theme, self-hosted fonts only (system stacks). */
+:root {
+  color-scheme: dark;
+  /* canvas and surfaces */
+  --c-bg: #0B0C0E;
+  --c-surface: #111317;
+  --c-surface-2: #16191E;
+  --c-surface-3: #1D2128;
+  --c-border: #23272E;
+  --c-border-strong: #313741;
+  /* text */
+  --c-text: #ECEEF1;
+  --c-text-muted: #A0A7B1;
+  --c-text-faint: #6F7682;
+  /* the one accent: charm rose */
+  --c-accent: #F06BA8;
+  --c-accent-soft: rgb(240 107 168 / 0.14);
+  --c-accent-text: #FFB3D4;
+  --c-on-accent: #1A0710;
+  /* status (always paired with a word, never colour alone) */
+  --c-serving: #3DD68C;
+  --c-near: #F5C451;
+  --c-filtered: #F2994A;
+  --c-cooling: #6CA8FF;
+  --c-pulled: #F2667A;
+  --c-nokey: #7B828D;
+  --c-serving-soft: rgb(61 214 140 / 0.14);
+  --c-near-soft: rgb(245 196 81 / 0.14);
+  --c-filtered-soft: rgb(242 153 74 / 0.14);
+  --c-cooling-soft: rgb(108 168 255 / 0.14);
+  --c-pulled-soft: rgb(242 102 122 / 0.14);
+  --c-nokey-soft: rgb(123 130 141 / 0.16);
+  /* chart series (pairs), in order */
+  --c-series-1: #F06BA8;
+  --c-series-2: #6CA8FF;
+  --c-series-3: #3DD68C;
+  --c-series-4: #F5C451;
+  --c-series-5: #B49CFF;
+  --c-series-6: #5ED4D9;
+
+  /* type: system stacks, nothing fetched */
+  --f-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-md: 0.875rem;
+  --fs-lg: 1rem;
+  --fs-xl: 1.25rem;
+  --fs-2xl: 1.75rem;
+  --fs-3xl: 2.25rem;
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --lh-tight: 1.15;
+  --lh-normal: 1.5;
+  --tracking-label: 0.06em;
+
+  /* space (4 px steps), radii, elevation, motion */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.25rem;
+  --s-6: 1.5rem;
+  --s-8: 2rem;
+  --s-10: 2.5rem;
+  --s-12: 3rem;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+  --border-w: 1px;
+  --shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 8px 24px rgb(0 0 0 / 0.45);
+  --focus-ring: 0 0 0 2px var(--c-bg), 0 0 0 4px var(--c-accent);
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --sidebar-w: 15rem;
+  --content-max: 80rem;
+  --bp-phone: 640px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --c-bg: #F6F6F4;
+    --c-surface: #FFFFFF;
+    --c-surface-2: #FAFAF8;
+    --c-surface-3: #F0F0ED;
+    --c-border: #E3E3DF;
+    --c-border-strong: #CFCFC9;
+    --c-text: #14161A;
+    --c-text-muted: #545B66;
+    --c-text-faint: #7A818B;
+    --c-accent: #C2306F;
+    --c-accent-soft: rgb(194 48 111 / 0.10);
+    --c-accent-text: #A3245B;
+    --c-on-accent: #FFFFFF;
+    --c-serving: #13824F;
+    --c-near: #9A6A00;
+    --c-filtered: #B4570F;
+    --c-cooling: #2563C9;
+    --c-pulled: #C02942;
+    --c-nokey: #6B717B;
+    --c-serving-soft: rgb(19 130 79 / 0.10);
+    --c-near-soft: rgb(154 106 0 / 0.12);
+    --c-filtered-soft: rgb(180 87 15 / 0.10);
+    --c-cooling-soft: rgb(37 99 201 / 0.10);
+    --c-pulled-soft: rgb(192 41 66 / 0.10);
+    --c-nokey-soft: rgb(107 113 123 / 0.12);
+    --c-series-1: #C2306F;
+    --c-series-2: #2563C9;
+    --c-series-3: #13824F;
+    --c-series-4: #9A6A00;
+    --c-series-5: #6B4FD8;
+    --c-series-6: #0E8A91;
+    --shadow-1: 0 1px 2px rgb(20 22 26 / 0.06);
+    --shadow-2: 0 8px 24px rgb(20 22 26 / 0.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: 0ms; --t-base: 0ms; }
+}

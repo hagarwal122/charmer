@@ -1,0 +1,78 @@
+# Charmer: LiteLLM Proxy + plugin, the dashboard, and an optional Cloudflare Tunnel.
+# Every image is pinned by digest. Every docker operation goes through the Makefile.
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.106.4@sha256:c169fb3adc514fcf210377c203f3de406d54f10bfdacf13948a4a839db9af7de
+    command: ["--config", "/app/rendered/config.yaml", "--port", "4000", "--num_workers", "1"]
+    env_file: [{ path: .env, required: false }]
+    environment:
+      LITELLM_MODE: PRODUCTION
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
+      DISABLE_ADMIN_UI: "True"
+      NO_DOCS: "True"                         # no /docs, /redoc, /openapi.json (SMK-20)
+      NO_REDOC: "True"
+      NO_OPENAPI: "True"
+      LITELLM_LOCAL_BLOG_POSTS: "True"         # the public blog route never fetches from the internet
+      PYTHONPATH: /app/plugin                 # charmer_auth, charmer_plugin and store load from here
+      CHARMER_DB: /data/charmer.sqlite
+      CHARMER_CONFIG: /app/conf/config.yaml
+      CHARMER_LIMITS: /app/conf/limits.yaml
+    volumes:
+      - ./rendered:/app/rendered:ro           # rendered/config.yaml, written by scripts/free_guard.py
+      - ./plugin:/app/plugin:ro
+      - ./config.yaml:/app/conf/config.yaml:ro
+      - ./limits.yaml:/app/conf/limits.yaml:ro
+      - data:/data
+    ports: ["127.0.0.1:${CHARMER_LITELLM_PORT:-4000}:4000"]   # host-only; the internet comes in through cloudflared
+    extra_hosts: ["litellm.dev:0.0.0.0"]      # sinkhole the 1.107-era exfiltration domain
+    mem_limit: 4g
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:4000/health/liveliness')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  dashboard:
+    build: { context: ., dockerfile: dashboard/Dockerfile }
+    image: charmer-dashboard:local
+    environment:                              # explicit, never env_file: no provider or consumer key here
+      CHARMER_DB: /data/charmer.sqlite
+      LITELLM_URL: http://litellm:4000
+      DASHBOARD_USERNAME: "${DASHBOARD_USERNAME}"
+      DASHBOARD_PASSWORD: "${DASHBOARD_PASSWORD}"
+      DASHBOARD_SESSION_SECRET: "${DASHBOARD_SESSION_SECRET}"
+      CHARMER_METRICS_KEY: "${CHARMER_METRICS_KEY}"
+      ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL:-}"
+      CHARMER_DASHBOARD_TZ: "${CHARMER_DASHBOARD_TZ:-UTC}"
+      DASHBOARD_TRUST_PROXY: "${DASHBOARD_TRUST_PROXY:-0}"
+      CHARMER_CONFIG: /app/conf/config.yaml
+      CHARMER_RENDERED: /app/rendered/config.yaml
+      CHARMER_LIMITS: /app/conf/limits.yaml
+      CHARMER_REPORTS: /app/reports
+    volumes:                                  # rendered/ and reports/ are directories (rewritten while running); the
+                                              # config files are single files, so make restart recreates the dashboard
+      - data:/data
+      - ./rendered:/app/rendered:ro
+      - ./reports:/app/reports:ro
+      - ./config.yaml:/app/conf/config.yaml:ro
+      - ./limits.yaml:/app/conf/limits.yaml:ro
+    ports: ["127.0.0.1:${CHARMER_DASHBOARD_PORT:-8080}:8080"]
+    restart: unless-stopped
+    depends_on: [litellm]
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.5@sha256:1b1d34d0a9c0bfca9de72db8460d328db3f19edd2b96169114e3e893a97bbe53
+    # A locally managed tunnel: routes in the committed cloudflared/config.yml, credentials gitignored (CFG-29).
+    command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/config.yml", "run", "${CLOUDFLARE_TUNNEL_ID}"]
+    user: "${CHARMER_UID:-65532}:${CHARMER_GID:-65532}"   # the Makefile sets your uid, so the 600 credentials file reads
+    volumes: ["./cloudflared:/etc/cloudflared:ro"]
+    profiles: ["tunnel"]
+    restart: unless-stopped
+  cloudflared-dashboard:
+    image: cloudflare/cloudflared:2026.10.5@sha256:1b1d34d0a9c0bfca9de72db8460d328db3f19edd2b96169114e3e893a97bbe53
+    # Optional: the dashboard on its own tunnel (cloudflared/dashboard.yml), started only when its id is set (CFG-30).
+    command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/dashboard.yml", "run", "${CLOUDFLARE_DASHBOARD_TUNNEL_ID}"]
+    user: "${CHARMER_UID:-65532}:${CHARMER_GID:-65532}"
+    volumes: ["./cloudflared:/etc/cloudflared:ro"]
+    profiles: ["dashboard-tunnel"]
+    restart: unless-stopped
+volumes: { data: {} }

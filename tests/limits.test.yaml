@@ -1,0 +1,12 @@
+# Small limits so the plugin cells trip fast.
+groups: [g-empty-declared]
+accounts:
+  stub:       { margin: 0, day_tz: UTC, source: test }
+  hdr:        { margin: 3, day_tz: UTC, source: test }
+  acct-x:     { day_requests: 4, day_tz: UTC, source: test }
+  openrouter: { day_requests: 1000, eval_day_requests: 3, margin: 20, day_tz: UTC, source: test }
+  cloudflare: { day_neurons: 10000, chat_stop_at: 1000, embed_stop_at: 9500, neurons_per_1k_tokens: 27, day_tz: UTC, source: test }
+  gemini:     { day_tz: America/Los_Angeles, source: test }
+models:
+  openai/ok-a@rpm-a: { minute_requests: 2, source: test }
+  openai/ok-a@d1:    { day_requests: 3, source: test }

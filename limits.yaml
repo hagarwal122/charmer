@@ -1,0 +1,28 @@
+# The numbers the plugin's filter enforces. One place only: config.yaml carries no rpm or tpm.
+# Every day limit names the IANA time zone its day resets in. (U) = from research, not yet seen in a console.
+# Groups that exist before they have a member: chat starts empty until a pair is admitted.
+groups: [chat, embed-bge-m3]
+
+accounts:
+  openrouter: { day_requests: 1000, eval_day_requests: 300, margin: 20, day_tz: UTC, source: "GET /api/v1/key, 2026-10-28" }
+  gemini:     { day_tz: America/Los_Angeles, source: "Gemini free tier resets at midnight Pacific" }
+  mistral:    { source: "Free plan, $10 a month included usage (2026-10-28)" }
+  groq:       { minute_tokens: 8000, minute_requests: 30, day_tokens: 200000, day_requests: 1000, day_tz: UTC, source: "response headers, 2026-10-28" }
+  zai:        { source: "glm-4.7-flash free tier, concurrency 1 (U)" }
+  nvidia:     { source: "NVIDIA NIM trial (U)" }
+  cloudflare: { day_neurons: 10000, chat_stop_at: 7000, embed_stop_at: 9500, neurons_per_1k_tokens: 27, day_tz: UTC, source: "Workers AI free plan; measured ~155 neurons a 5.7K-token call" }
+models:
+  openrouter/nvidia/nemotron-3.5-super-vl:free:    { minute_requests: 20, source: "OpenRouter :free limit, 2026-10-27" }
+  openrouter/nvidia/nemotron-3-ultra-550b-a55b:free: { minute_requests: 20, source: "OpenRouter :free limit, 2026-10-27" }
+  openrouter/google/gemma-4-31b-it:free:           { minute_requests: 20, source: "OpenRouter :free limit, 2026-10-27" }
+  gemini/gemini-3.1-flash-lite:                    { minute_requests: 10, minute_tokens: 250000, day_requests: 500, source: "(U) research 2026-10-27" }
+  gemini/gemini-3.5-flash-lite:                    { minute_requests: 10, minute_tokens: 250000, day_requests: 500, source: "(U) research 2026-10-27" }
+  mistral/ministral-14b-2512:                      { minute_requests: 30, minute_tokens: 937500, source: "response headers, 2026-10-28" }
+  zai/glm-4.7-flash:                               { minute_requests: 10, source: "(U) research 2026-10-27" }
+  nvidia_nim/mistralai/mistral-large-4-1t-a52b:    { minute_requests: 40, source: "NVIDIA trial: 40 requests a minute per account (U), 2026-10-31" }
+  nvidia_nim/minimaxai/minimax-m3.1-flash:          { minute_requests: 40, source: "NVIDIA trial: 40 requests a minute per account (U), 2026-11-01" }
+  nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b:     { minute_requests: 40, source: "NVIDIA trial: 40 requests a minute per account (U), 2026-11-01" }
+  nvidia_nim/nvidia/nemotron-3.5-super-vl-120b-a12b: { minute_requests: 40, source: "NVIDIA trial: 40 requests a minute per account (U), 2026-11-01" }
+  groq/openai/gpt-oss-120b:                        { minute_requests: 30, minute_tokens: 8000, source: "response headers, 2026-10-28" }
+  cloudflare/@cf/openai/gpt-oss-120b:              { minute_requests: 300, source: "Workers AI limit (U)" }
+  openai/@cf/baai/bge-m3:                          { minute_requests: 300, source: "Workers AI limit (U)" }
