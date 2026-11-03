@@ -74,6 +74,7 @@ main:focus { outline: none; }
   padding: var(--s-5);
   box-shadow: var(--shadow-1);
   min-width: 0;
+  container-type: inline-size; /* a table inside follows the card's width, not the screen's */
 }
 .card-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); margin-bottom: var(--s-4); }
 .card-lede { margin-bottom: var(--s-4); }
@@ -82,7 +83,8 @@ main:focus { outline: none; }
 .explore { color: var(--c-text-muted); text-decoration: underline; text-underline-offset: 3px; font-size: var(--fs-sm); }
 .explore:hover { color: var(--c-text); }
 .empty { color: var(--c-text-muted); padding: var(--s-8) var(--s-4); text-align: center; border: var(--border-w) dashed var(--c-border); border-radius: var(--r-md); }
-.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr)); gap: var(--s-5); }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr)); gap: var(--s-5); }
+.grid-2 .card-wide { grid-column: 1 / -1; }
 .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: var(--s-5); }
 
 /* ---- KPI cards ---- */
@@ -130,7 +132,7 @@ a.seg-btn { display: inline-flex; align-items: center; gap: var(--s-2); text-dec
 
 /* ---- tables ---- */
 .table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
-.table th { white-space: nowrap; text-align: left; font-weight: var(--fw-medium); color: var(--c-text-muted); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: var(--tracking-label); padding: 0 var(--s-3) var(--s-2); border-bottom: var(--border-w) solid var(--c-border); }
+.table th { text-align: left; font-weight: var(--fw-medium); color: var(--c-text-muted); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: var(--tracking-label); padding: 0 var(--s-3) var(--s-2); border-bottom: var(--border-w) solid var(--c-border); }
 .table td { padding: var(--s-3); border-bottom: var(--border-w) solid var(--c-border); vertical-align: top; }
 .table tbody tr:last-child td { border-bottom: 0; }
 .table tbody tr:hover td { background: var(--c-surface-2); }
@@ -261,21 +263,37 @@ label, .field span { font-size: var(--fs-sm); font-weight: var(--fw-medium); col
   .kpi { padding: var(--s-3) var(--s-4); }
   .kpi-value { font-size: var(--fs-2xl); }
   .kpi:last-child { grid-column: 1 / -1; }
-  .table thead { display: none; }
-  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
-  .table tr { padding: var(--s-3) 0; border-bottom: var(--border-w) solid var(--c-border); }
-  /* the label sits in a fixed left column; the value keeps its own inline flow, so no part of it slips under the label */
-  .table td { position: relative; border: 0; padding: var(--s-1) 0 var(--s-1) calc(8rem + var(--s-3)); }
-  .table td::before { content: attr(data-label); position: absolute; left: 0; top: var(--s-1); width: 8rem; color: var(--c-text-muted); font-size: var(--fs-xs); line-height: var(--lh-normal); }
-  .table .num { text-align: left; }
-  /* a call is two short lines: what served it and the answer, then when, who and how long */
-  .table-calls tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
+  .card { padding: var(--s-4); }
+}
+
+/* ---- tables in a narrow card ----
+   A table switches when its card is narrower than its columns need (measured: a group table 26rem, Pairs 44rem,
+   Calls about 40rem), at any screen width. Each row becomes a stack: the label in a fixed left column, the value
+   keeping its own inline flow, so no part of it slips under the label. */
+@container (max-width: 27rem) {
+  .table:not(.table-calls) thead { display: none; }
+  .table:not(.table-calls), .table:not(.table-calls) :is(tbody, tr, td) { display: block; width: 100%; }
+  .table:not(.table-calls) tr { padding: var(--s-3) 0; border-bottom: var(--border-w) solid var(--c-border); }
+  .table:not(.table-calls) td { position: relative; border: 0; padding: var(--s-1) 0 var(--s-1) calc(8rem + var(--s-3)); text-align: left; }
+  .table:not(.table-calls) td::before { content: attr(data-label); position: absolute; left: 0; top: var(--s-1); width: 8rem; color: var(--c-text-muted); font-size: var(--fs-xs); line-height: var(--lh-normal); }
+}
+@container (max-width: 46rem) {
+  .table-pairs thead { display: none; }
+  .table-pairs, .table-pairs :is(tbody, tr, td) { display: block; width: 100%; }
+  .table-pairs tr { padding: var(--s-3) 0; border-bottom: var(--border-w) solid var(--c-border); }
+  .table-pairs td { position: relative; border: 0; padding: var(--s-1) 0 var(--s-1) calc(8rem + var(--s-3)); text-align: left; }
+  .table-pairs .num { text-align: left; }
+  .table-pairs td::before { content: attr(data-label); position: absolute; left: 0; top: var(--s-1); width: 8rem; color: var(--c-text-muted); font-size: var(--fs-xs); line-height: var(--lh-normal); }
+}
+/* a call is two short lines: what served it and the answer, then when, who and how long */
+@container (max-width: 42rem) {
+  .table-calls thead { display: none; }
+  .table-calls, .table-calls tbody { display: block; width: 100%; }
+  .table-calls tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); padding: var(--s-3) 0; border-bottom: var(--border-w) solid var(--c-border); }
   .table-calls tr::after { content: ""; order: -1; flex-basis: 100%; }
-  .table-calls td { width: auto; padding: 0; color: var(--c-text-muted); font-size: var(--fs-xs); }
-  .table-calls td::before { content: none; }
+  .table-calls td { padding: 0; border: 0; text-align: left; color: var(--c-text-muted); font-size: var(--fs-xs); }
   .table-calls td code { font-size: var(--fs-xs); }
   .table-calls td[data-label="Served by"] { order: -2; flex: 1 1 0; min-width: 0; color: var(--c-text); font-size: var(--fs-sm); }
   .table-calls td[data-label="Status"] { order: -1; font-size: var(--fs-sm); }
   .table-calls td[data-label="Tokens"]::after { content: " tokens"; }
-  .card { padding: var(--s-4); }
 }

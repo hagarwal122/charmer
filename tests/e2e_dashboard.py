@@ -90,6 +90,23 @@ def main():
                 page.screenshot(path=f"{SHOTS}/{scheme}-{size}-404.png")
                 ctx.close()
 
+        # nothing spills out of its card at any width between a tablet and a wide desktop (a 4-column table in a
+        # narrow card used to run past the card's edge)
+        ctx = browser.new_context(viewport=SIZES["desktop"], color_scheme="dark")
+        page = ctx.new_page()
+        sign_in(page)
+        for width in (700, 768, 1024, 1280, 1601, 1920):
+            page.set_viewport_size({"width": width, "height": 900})
+            for path in ("/", "/pairs", "/providers", "/calls", "/alerts"):
+                page.goto(BASE + path)
+                spilled = page.evaluate("""[...document.querySelectorAll('.card')].flatMap(card => {
+                    const c = card.getBoundingClientRect();
+                    return [...card.querySelectorAll('*')].filter(e => { const r = e.getBoundingClientRect();
+                        return r.width && (r.right > c.right + 1 || r.left < c.left - 1); }).map(e => e.tagName);
+                }).length""")
+                check(spilled == 0, f"{width}px {path}: nothing spills out of its card ({spilled} elements)")
+        ctx.close()
+
         # live refresh, keyboard, and the Pull/Unpull flow (DSH-12)
         ctx = browser.new_context(viewport=SIZES["desktop"], color_scheme="dark")
         page = ctx.new_page()
