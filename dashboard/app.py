@@ -3,7 +3,9 @@
 Every route needs a session except /login, /healthz and /static. Writes: pulls (Pull/Unpull) and alerts (Clear) only.
 """
 import datetime as dt
+import hashlib
 import os
+import statistics
 import time
 import urllib.parse
 
@@ -11,6 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.exceptions import HTTPException
 
 import auth
 import state as S
@@ -34,7 +37,7 @@ def _num(v):
     if v is None:
         return "—"
     v = float(v)
-    for size, unit in ((1e9, "B"), (1e6, "M"), (1e4, "k")):
+    for size, unit in ((1e9, "B"), (1e6, "M"), (1e5, "k")):
         if abs(v) >= size:
             divisor = 1e3 if unit == "k" else size
             return f"{v / divisor:.1f}".removesuffix(".0") + unit
@@ -55,6 +58,14 @@ def _when(ts):
     return d.strftime("%H:%M") if d.date() == today else d.strftime("%d %b %H:%M")
 
 
+def _stamp(ts):
+    """A call's time to the second: two calls in one minute must read apart."""
+    if not ts:
+        return "—"
+    d = dt.datetime.fromtimestamp(ts, S.TZ)
+    return d.strftime("%H:%M:%S") if d.date() == dt.datetime.now(S.TZ).date() else d.strftime("%d %b %H:%M:%S")
+
+
 def _ago(ts):
     if not ts:
         return "—"
@@ -66,7 +77,7 @@ def _ago(ts):
     return f"{s // 3600} h ago"
 
 
-templates.env.filters.update(num=_num, clock=_clock, when=_when, ago=_ago)
+templates.env.filters.update(num=_num, clock=_clock, when=_when, stamp=_stamp, ago=_ago)
 def _theme_bg():
     """The page background per scheme, read from tokens.css for <meta name="theme-color"> (tokens stay the one source)."""
     import re
@@ -75,7 +86,17 @@ def _theme_bg():
     return {"dark": found[0].strip(), "light": found[1].strip() if len(found) > 1 else found[0].strip()}
 
 
-templates.env.globals.update(pages=PAGES, tzname=str(S.TZ), theme_bg=_theme_bg())
+def _asset_version():
+    """A hash of the static files: asset URLs change with their content, so no browser keeps an old app.css or app.js."""
+    h = hashlib.sha256()
+    folder = os.path.join(HERE, "static")
+    for name in sorted(os.listdir(folder)):
+        with open(os.path.join(folder, name), "rb") as f:
+            h.update(name.encode() + f.read())
+    return h.hexdigest()[:10]
+
+
+templates.env.globals.update(pages=PAGES, tzname=str(S.TZ), theme_bg=_theme_bg(), asset_v=_asset_version())
 
 
 # ---- sessions -------------------------------------------------------------------------------------------------------
@@ -97,10 +118,18 @@ async def form(request):
     return {k: v[0] for k, v in urllib.parse.parse_qs((await request.body()).decode()).items()}
 
 
-def page(request, name, **ctx):
-    data = S.build(STORE, HEALTH)
+def page(request, name, data=None, status=200, **ctx):
     return templates.TemplateResponse(request, f"{name}.html", {
-        "page": name, "s": data, "csrf": request.state.session["csrf"], **ctx})
+        "page": name, "s": data or S.build(STORE, HEALTH), "csrf": request.state.session["csrf"], **ctx}, status_code=status)
+
+
+@app.exception_handler(HTTPException)
+async def http_error(request: Request, exc: HTTPException):
+    """A signed-in GET of an unknown page gets a page with the sidebar; everything else keeps the JSON answer."""
+    if exc.status_code == 404 and request.method == "GET" and not request.url.path.startswith(("/api/", "/static/")) \
+            and getattr(request.state, "session", None):
+        return page(request, "404", status=404)
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
 
 @app.get("/healthz")
@@ -123,7 +152,7 @@ async def login(request: Request):
     if not auth.credentials_ok(sent.get("username", ""), sent.get("password", "")):
         auth.failed_try(who)
         return templates.TemplateResponse(request, "login.html", {"page": "login", "username": sent.get("username", ""),
-                                          "error": "That username or password isn't right. They are DASHBOARD_USERNAME and DASHBOARD_PASSWORD in your .env."},
+                                          "error": "That username or password isn’t right."},
                                           status_code=401)
     value, _ = auth.new_session()
     resp = RedirectResponse("/", status_code=303)
@@ -148,13 +177,39 @@ async def api_state():
 
 @app.get("/", response_class=HTMLResponse)
 async def now_page(request: Request):
-    return page(request, "now")
+    data = S.build(STORE, HEALTH)
+    # every deployment is also its own pair-<id> group for evals: one card lists them, the consumers' groups get a card each
+    return page(request, "now", data, groups=[g for g in data["groups"] if not g["name"].startswith("pair-")],
+                evals=[g for g in data["groups"] if g["name"].startswith("pair-")])
+
+
+CALLS_PER_PAGE = 50
 
 
 @app.get("/calls", response_class=HTMLResponse)
 async def calls_page(request: Request):
     q = request.query_params
-    return page(request, "calls", filters={k: q.get(k, "") for k in ("key", "group", "deployment", "status")})
+    filters = {k: q.get(k, "") for k in ("key", "group", "deployment", "status")}
+    data = S.build(STORE, HEALTH)
+    recent = data["recent"]
+    rows = [c for c in recent if all(not filters[k] or c[k] == filters[k] for k in ("key", "group", "deployment"))]
+    if filters["status"] in ("ok", "error"):
+        rows = [c for c in rows if ((c["status"] or 0) < 400) == (filters["status"] == "ok")]
+    pages = max(1, -(-len(rows) // CALLS_PER_PAGE))
+    try:
+        n = min(max(1, int(q.get("page", "1"))), pages)
+    except ValueError:
+        n = 1
+    first = (n - 1) * CALLS_PER_PAGE
+    ok = sum(1 for c in rows if (c["status"] or 0) < 400)
+    latency = [c["latency_ms"] for c in rows if c["latency_ms"] is not None]
+    kept = {k: v for k, v in filters.items() if v}
+    return page(request, "calls", data, filters=filters, rows=rows[first:first + CALLS_PER_PAGE], total=len(rows),
+                first=first, ok_pct=round(100 * ok / len(rows)) if rows else None,
+                median=round(statistics.median(latency)) if latency else None,
+                prev=f"/calls?{urllib.parse.urlencode({**kept, 'page': n - 1})}" if n > 1 else None,
+                next=f"/calls?{urllib.parse.urlencode({**kept, 'page': n + 1})}" if n < pages else None,
+                options={k: sorted({c[k] for c in recent if c[k]}) for k in ("key", "group", "deployment")})
 
 
 @app.get("/providers", response_class=HTMLResponse)
@@ -162,10 +217,18 @@ async def providers_page(request: Request):
     return page(request, "providers")
 
 
+ATTENTION = {"near", "filtered", "cooling", "pulled"}
+
+
 @app.get("/pairs", response_class=HTMLResponse)
 async def pairs_page(request: Request):
-    return page(request, "pairs")
-
+    q = request.query_params
+    group, want = q.get("group", ""), q.get("state", "")
+    data = S.build(STORE, HEALTH)
+    rows = [p for p in data["pairs"] if (not group or p["group"] == group) and (want != "attention" or p["state"] in ATTENTION)]
+    changed = next((p for p in data["pairs"] if p["id"] == q.get("changed")), None)
+    return page(request, "pairs", data, rows=rows, group=group, want=want, changed=changed,
+                attention=sum(1 for p in data["pairs"] if p["state"] in ATTENTION))
 
 
 @app.get("/alerts", response_class=HTMLResponse)
@@ -175,8 +238,7 @@ async def alerts_page(request: Request):
 
 @app.get("/brand", response_class=HTMLResponse)
 async def brand_page(request: Request):
-    return templates.TemplateResponse(request, "brand.html", {"page": "brand", "csrf": request.state.session["csrf"],
-                                                              "s": {"alerts_open": 0, "litellm": {"up": HEALTH.up}}})
+    return page(request, "brand")
 
 
 async def _checked(request):
@@ -196,7 +258,7 @@ async def pull(request: Request):
     if target not in known:
         return JSONResponse({"error": "unknown deployment"}, status_code=404)
     STORE.add_pull(target, data.get("reason") or "pulled from the dashboard", "dashboard")
-    return _save("/pairs")
+    return _save(_pairs_view(data, target))
 
 
 @app.post("/pairs/unpull")
@@ -211,7 +273,13 @@ async def unpull(request: Request):
     if any(who in S.GUARDS for (who,) in rows):
         return JSONResponse({"error": "a guard's pull is lifted by its guard"}, status_code=403)
     STORE.add("unpull", target, time.time(), ["owner", "dashboard"])
-    return _save("/pairs")
+    return _save(_pairs_view(data, target))
+
+
+def _pairs_view(data, changed):
+    """Back to the Pairs view the button was pressed in (its group or state filter), naming the pair that changed."""
+    kept = {k: data[k] for k in ("group", "state") if data.get(k)}
+    return f"/pairs?{urllib.parse.urlencode({**kept, 'changed': changed})}"
 
 
 @app.post("/alerts/clear")

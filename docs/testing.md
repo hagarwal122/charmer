@@ -11,7 +11,7 @@ by hand.
 | `make test-tunnel` | CFG-28 | `tests/tunnel_test.sh` | both tunnels' routes, by the pinned cloudflared offline |
 | `make test-cfg` | CFG-02 to CFG-27, CFG-29 to CFG-31 | `tests/test_config.py` | the real config files and the Makefile, in the LiteLLM image |
 | `make test-unit` | CFG-23, PLG-01 to PLG-16 | `tests/test_auth.py`, `tests/test_plugin.py` | the auth hook and the plugin, no proxy and no network |
-| `make test-dashboard` | DSH-01 to DSH-10, DSH-13, DSH-14 | `tests/test_dashboard.py` | the app in-process, a fixture SQLite file and a fake LiteLLM |
+| `make test-dashboard` | DSH-01 to DSH-10, DSH-13 to DSH-21 | `tests/test_dashboard.py` | the app in-process, a fixture SQLite file and a fake LiteLLM |
 | `make test-boot` | CFG-03 | `tests/boot_check.py` | LiteLLM booted with the real config and placeholder keys; no provider is called |
 | `make test-smoke` | SMK-01 to SMK-35, FREE, DSC, BKP-01 | `tests/smoke.py` | LiteLLM and the plugin against the stub provider, then a restart |
 | `make test-e2e` | DSH-12 | `tests/e2e_dashboard.py` | a real Chromium (Playwright) on the stub stack; screenshots go to `reports/shots/` |

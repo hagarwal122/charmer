@@ -126,14 +126,16 @@ Day rows and lifted pulls are pruned after 90 days.
 ## The dashboard
 
 The dashboard is a FastAPI app with server-rendered Jinja templates and no build step. `static/app.js` refreshes the
-numbers from `/api/state` every 5 seconds, and draws the sparklines and the hourly chart as inline SVG.
+numbers on Now from `/api/state` every 5 seconds, and draws the sparklines and the hourly chart as inline SVG. The
+other pages show when they were rendered ("as of"). Hours and "today" follow `CHARMER_DASHBOARD_TZ`, never the
+viewer's clock. Asset URLs carry a hash of the static files, so an upgrade never leaves a browser on an old script.
 
 | Page | Shows |
 | --- | --- |
-| Now | KPIs, requests by pair, the tightest limits, LiteLLM's health |
-| Calls | Recent calls |
+| Now | KPIs, requests by pair (the five busiest, the rest as Other), each consumer group's pairs, the eval pairs in one card, LiteLLM's health |
+| Calls | The last 1,000 calls, 50 a page, filtered by key, group, pair or status, with the success share and median latency |
 | Providers | Accounts, their models, and the latest discovery report |
-| Pairs | Each deployment's state (serving, near limit, filtered, cooling, pulled, no key), with Pull and Unpull |
+| Pairs | Each deployment's state (serving, near limit, filtered, cooling, pulled, no key), with Pull and Unpull; filters by group or "needs attention" |
 | Alerts | Open alerts, with Clear |
 | Brand | The design tokens |
 

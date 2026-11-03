@@ -165,8 +165,9 @@ def build(store, health):
     minute_rows = _rows(store, "select account, model, minute, requests, prompt, completion from usage_minute"
                                " where minute >= ?", (st._minute(now - 48 * 3600),))
     last_min = collections.defaultdict(lambda: {"requests": 0, "tokens": 0})
-    hours = [now - (47 - i) * 3600 for i in range(48)]
-    hour_start = [h - h % 3600 for h in hours]
+    # 48 hourly buckets on the hour in the dashboard's zone (India is +05:30), the last one holding now
+    this_hour = now - (now + dt.datetime.fromtimestamp(now, TZ).utcoffset().total_seconds()) % 3600
+    hour_start = [this_hour - (47 - i) * 3600 for i in range(48)]
     req_series, tok_series = [0] * 48, [0] * 48
     by_model = collections.defaultdict(lambda: [0] * 48)
     for a, m, minute, req, p, c in minute_rows:
@@ -353,7 +354,7 @@ def build(store, health):
         "litellm": {"up": health.up, "checked_at": health.checked_at},
         "alerts_open": sum(1 for a in alerts if not a["cleared"]),
         "kpis": kpis,
-        "by_pair": {"hours": hour_start, "series": [{"pair": k, "values": v} for k, v in sorted(stacked.items()) if any(v)]},
+        "by_pair": {"hours": hour_start, "today_from": local_midnight, "series": [{"pair": k, "values": v} for k, v in sorted(stacked.items()) if any(v)]},
         "groups": [{"name": g, "members": [{k: m[k] for k in ("id", "account", "model", "state", "label", "tightest", "day")} for m in ms]}
                    for g, ms in groups.items()],
         "recent": recent, "providers": providers, "pairs": pairs, "alerts": alerts,

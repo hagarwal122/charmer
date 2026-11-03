@@ -217,8 +217,8 @@ Tool calls and streaming work as in the OpenAI API. The full contract is in [the
   </tr>
 </table>
 
-Numbers refresh every 5 seconds. **Calls** lists the last 1,000 calls; it records token counts and ids, never prompt
-text. **Alerts** collects limit warnings, guard pulls and failed checks. You can also send alerts to a webhook.
+Numbers refresh every 5 seconds. **Calls** lists the last 1,000 calls, 50 a page, with filters; it records token
+counts and ids, never prompt text. **Alerts** collects limit warnings, guard pulls and failed checks. You can also send alerts to a webhook.
 
 **Signing in.** The dashboard has one account, defined in `.env`: `DASHBOARD_USERNAME` and `DASHBOARD_PASSWORD`. There
 is no sign-up page and nothing is stored elsewhere; to change either, edit `.env` and run `make restart`. Charmer

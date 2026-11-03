@@ -7,9 +7,9 @@
   <meta name="theme-color" content="{{ theme_bg.dark }}" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="{{ theme_bg.light }}" media="(prefers-color-scheme: light)">
   <title>{% block title %}{{ page|capitalize }}{% endblock %} · Charmer</title>
-  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/tokens.css">
-  <link rel="stylesheet" href="/static/app.css">
+  <link rel="icon" href="/static/favicon.svg?v={{ asset_v }}" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/tokens.css?v={{ asset_v }}">
+  <link rel="stylesheet" href="/static/app.css?v={{ asset_v }}">
 </head>
 <body data-page="{{ page }}">
 <a class="skip" href="#main">Skip to content</a>
@@ -27,7 +27,7 @@
       </ul>
     </nav>
     <div class="sidebar-foot">
-      <a class="faint" href="/brand">Brand</a>
+      <a class="faint" href="/brand" {% if page == "brand" %}aria-current="page"{% endif %}>Brand</a>
       <form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="link" type="submit">Sign Out</button></form>
     </div>
   </aside>
@@ -46,7 +46,7 @@
         <span class="chip chip-nokey" data-bind-litellm><span class="chip-dot" aria-hidden="true"></span>LiteLLM checking</span>
         {% endif %}
         <span class="tz faint" title="Times are shown in this zone">{{ tzname }}</span>
-        <span class="updated faint" aria-live="polite" data-updated>live</span>
+        {% if page == "now" %}<span class="updated faint" role="status" data-updated>live</span>{% elif s.now %}<span class="updated faint" title="This page does not refresh by itself">as of {{ s.now|stamp }}</span>{% endif %}
       </div>
     </header>
     <main id="main" tabindex="-1">
@@ -54,6 +54,6 @@
     </main>
   </div>
 </div>
-<script src="/static/app.js" defer></script>
+<script src="/static/app.js?v={{ asset_v }}" defer></script>
 </body>
 </html>

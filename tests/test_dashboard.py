@@ -313,7 +313,7 @@ class Auth(unittest.TestCase):
             o = client()[0]
             status, _, body = req(o, "POST", "/login", {"username": user, "password": pw}, {"cf-connecting-ip": ip})
             self.assertEqual(status, 401, user)
-            self.assertIn("That username or password isn't right.", html.unescape(body))
+            self.assertIn("That username or password isn’t right.", html.unescape(body))
         o = client()[0]
         status, _, _ = req(o, "POST", "/login", {"password": PASSWORD}, {"cf-connecting-ip": "198.51.100.23"})
         self.assertEqual(status, 401, "no username at all")
@@ -361,6 +361,15 @@ class Auth(unittest.TestCase):
         self.assertEqual(pairs["two-a"]["state"], "serving")
         self.assertEqual(pairs["rpm-b"]["state"], "pulled")
 
+    def test_pull_keeps_the_pairs_filter(self):
+        """A Pull from Pairs filtered to a group comes back to that same filtered view, naming the pair it changed."""
+        o = login()[0]
+        token = csrf_of(o)
+        status, h, _ = req(o, "POST", "/pairs/pull", {"csrf": token, "id": "rpm-a", "group": "g-rpm", "state": ""})
+        self.assertEqual(status, 303)
+        self.assertEqual(h.get("location", h.get("Location")), "/pairs?group=g-rpm&changed=rpm-a")
+        req(o, "POST", "/pairs/unpull", {"csrf": token, "id": "rpm-a", "group": "g-rpm"})
+
     def test_pull_and_unpull_with_csrf(self):
         """Pull and Unpull write pulls rows (who: dashboard); a guard's pull cannot be lifted here."""
         o = login()[0]
@@ -407,6 +416,116 @@ class Secrets(unittest.TestCase):
             self.assertEqual(status, 200, path)
             for s in secrets:
                 self.assertNotIn(s, body, f"{path} carries a secret")
+
+
+class Pages(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.o = login()[0]
+
+    def body(self, path):
+        status, _, body = req(self.o, "GET", path)
+        self.assertEqual(status, 200, path)
+        return html.unescape(body)
+
+    def test_dsh15_chart_hours_follow_the_dashboard_time_zone(self):
+        """DSH-15: the hourly buckets start on the hour in CHARMER_DASHBOARD_TZ (Asia/Kolkata is +05:30), the last one
+        holds now, and "today" starts at that zone's midnight, so the chart never depends on the viewer's clock."""
+        import datetime as dt
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("Asia/Kolkata")
+        state = json.loads(req(self.o, "GET", "/api/state")[2])
+        hours = state["by_pair"]["hours"]
+        self.assertEqual(len(hours), 48)
+        self.assertTrue(all(dt.datetime.fromtimestamp(h, tz).minute == 0 for h in hours), "every bucket starts on the hour")
+        self.assertTrue(hours[-1] <= state["now"] < hours[-1] + 3600, "the last bucket holds now")
+        midnight = dt.datetime.combine(dt.datetime.fromtimestamp(state["now"], tz).date(), dt.time(), tz).timestamp()
+        self.assertEqual(state["by_pair"]["today_from"], midnight)
+        self.assertEqual(state["tz"], "Asia/Kolkata")
+
+    def test_dsh16_calls_are_paged_with_a_summary_and_seconds(self):
+        """DSH-16: Calls shows 50 rows a page with the total, the success share and the median latency; paging keeps the
+        filters; times carry seconds, so calls in one minute can be told apart."""
+        sys.path.insert(0, str(ROOT / "plugin"))
+        import store as st
+        s = st.Store(os.environ["CHARMER_DB"])
+        now = time.time()
+        for i in range(120):
+            s.add("recent", now - 200 - i, "pager", "g-two", "two-a", None, 200 if i % 4 else 429, 100 + i, 10, False)
+        s.flush()
+        page1 = self.body("/calls?key=pager")
+        self.assertEqual(page1.count('<td data-label="Key">pager</td>'), 50)
+        self.assertIn("1–50 of 120 calls", page1)
+        self.assertIn("75% succeeded", page1)
+        self.assertRegex(page1, r"median \d+\xa0ms")
+        self.assertIn('href="/calls?key=pager&amp;page=2"', req(self.o, "GET", "/calls?key=pager")[2], "Next keeps the filter")
+        page3 = self.body("/calls?key=pager&page=3")
+        self.assertEqual(page3.count('<td data-label="Key">pager</td>'), 20)
+        self.assertIn("101–120 of 120 calls", page3)
+        self.assertRegex(page1, r'<td data-label="Time" class="tnum">\d\d:\d\d:\d\d</td>')
+        self.assertEqual(req(self.o, "GET", "/calls?page=nope")[0], 200, "a bad page number falls back to the first page")
+
+    def test_dsh17_now_folds_eval_pairs_and_links_groups_to_pairs(self):
+        """DSH-17: on Now, the one-member pair-* eval groups share one Eval Pairs card instead of a card each, and each
+        group card links to Pairs filtered to that group."""
+        body = self.body("/")
+        self.assertIn("Eval Pairs", body)
+        for g in ("pair-ok-a", "pair-x1", "pair-or1"):
+            self.assertNotIn(f'<code translate="no">{g}</code></h2>', body, f"{g} has no card of its own")
+            self.assertIn(g, body, f"{g} is listed in the Eval Pairs card")
+        self.assertIn('<code translate="no">g-two</code></h2>', body)
+        self.assertIn('href="/pairs?group=g-two"', body)
+
+    def test_dsh18_pairs_filter_by_group_and_state(self):
+        """DSH-18: Pairs narrows to one group (?group=) or to the pairs that need attention (?state=attention)."""
+        body = self.body("/pairs?group=g-two")
+        rows = re.findall(r'<td data-label="Pair"><span class="mono" translate="no">([^<]+)</span>', body)
+        self.assertEqual(sorted(rows), ["two-a", "two-b"])
+        body = self.body("/pairs?state=attention")
+        rows = set(re.findall(r'<td data-label="Pair"><span class="mono" translate="no">([^<]+)</span>', body))
+        self.assertTrue({"rpm-b", "gm1", "fail-rl", "d1"} <= rows, rows)
+        self.assertNotIn("two-a", rows)
+        self.assertIn("Needs Attention", body)
+
+    def test_dsh19_alert_badge_on_every_page_and_a_styled_404(self):
+        """DSH-19: the open-alerts badge shows on every page, Brand included; an unknown page is a page, not JSON."""
+        n = json.loads(req(self.o, "GET", "/api/state")[2])["alerts_open"]
+        self.assertGreater(n, 0)
+        for path in ("/", "/brand", "/pairs"):
+            self.assertIn(f'aria-label="{n} open"', self.body(path), path)
+        status, h, body = req(self.o, "GET", "/no-such-page")
+        self.assertEqual(status, 404)
+        self.assertIn("text/html", h.get("content-type", h.get("Content-Type", "")))
+        self.assertIn("Page not found", body)
+        self.assertEqual(req(self.o, "GET", "/api/nope")[0], 404)
+
+    def test_dsh21_assets_carry_their_content_hash(self):
+        """DSH-21: every stylesheet, script and icon URL carries a hash of the static files, so a browser never keeps an
+        old app.css or app.js after an upgrade; the hash is the same on every page."""
+        seen = set()
+        for path in ("/", "/pairs"):
+            body = self.body(path)
+            for asset in ("tokens.css", "app.css", "app.js", "favicon.svg"):
+                m = re.search(rf'/static/{re.escape(asset)}\?v=([0-9a-f]{{10}})"', body)
+                self.assertIsNotNone(m, f"{path}: {asset}")
+                seen.add(m.group(1))
+        login_page = req(client()[0], "GET", "/login")[2]
+        seen |= set(re.findall(r'/static/app\.css\?v=([0-9a-f]{10})"', login_page))
+        self.assertEqual(len(seen), 1, seen)
+        self.assertEqual(req(self.o, "GET", f"/static/app.css?v={seen.pop()}")[0], 200)
+
+    def test_dsh20_numbers_read_the_same_everywhere(self):
+        """DSH-20: numbers compact only from 100k, so a meter never mixes "1,000 of 10k"; an uncapped count reads
+        "5 · no limit"; a number and its unit never wrap apart."""
+        self.assertEqual(DASH._num(10000), "10,000")
+        self.assertEqual(DASH._num(99999), "99,999")
+        self.assertEqual(DASH._num(250000), "250k")
+        self.assertEqual(DASH._num(1_500_000), "1.5M")
+        body = self.body("/providers")
+        self.assertRegex(body, r'<span class="tnum">\d[\d,]*</span> <span class="faint">· no limit</span>')
+        self.assertRegex(body, r"of\xa0\d")
+        self.assertNotRegex(self.body("/calls"), r"\d ms<")
+        self.assertNotIn("— No data", self.body("/"))
 
 
 class Tokens(unittest.TestCase):

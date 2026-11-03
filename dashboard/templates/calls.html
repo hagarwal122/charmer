@@ -1,18 +1,11 @@
 {% extends "base.html" %}
 {% block sub %}The last 1,000 calls. Token counts and ids only, never prompt text.{% endblock %}
 {% block content %}
-{% set rows = s.recent %}
-{% if filters.key %}{% set rows = rows|selectattr("key", "equalto", filters.key)|list %}{% endif %}
-{% if filters.group %}{% set rows = rows|selectattr("group", "equalto", filters.group)|list %}{% endif %}
-{% if filters.deployment %}{% set rows = rows|selectattr("deployment", "equalto", filters.deployment)|list %}{% endif %}
-{% if filters.status == "ok" %}{% set rows = rows|selectattr("status", "lt", 400)|list %}{% elif filters.status == "error" %}{% set rows = rows|selectattr("status", "ge", 400)|list %}{% endif %}
-<form class="card filters" method="get" action="/calls" aria-label="Filter calls">
-  {% for field, label, values in [("key", "Key", s.recent|map(attribute="key")|reject("none")|unique|sort),
-                                  ("group", "Group", s.recent|map(attribute="group")|reject("none")|unique|sort),
-                                  ("deployment", "Served by", s.recent|map(attribute="deployment")|reject("none")|unique|sort)] %}
+<form class="card filters" method="get" action="/calls" aria-label="Filter calls" data-autosubmit>
+  {% for field, label in [("key", "Key"), ("group", "Group"), ("deployment", "Served by")] %}
   <label class="field"><span>{{ label }}</span>
     <select name="{{ field }}"><option value="">All</option>
-      {% for v in values if v %}<option value="{{ v }}" {% if filters[field] == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
+      {% for v in options[field] %}<option value="{{ v }}" {% if filters[field] == v %}selected{% endif %}>{{ v }}</option>{% endfor %}
     </select></label>
   {% endfor %}
   <label class="field"><span>Status</span>
@@ -21,26 +14,36 @@
       <option value="error" {% if filters.status == "error" %}selected{% endif %}>Failed or busy</option>
     </select></label>
   <button class="btn" type="submit">Filter</button>
-  <a class="link" href="/calls">Clear</a>
+  {% if filters.values()|select|list %}<a class="btn btn-quiet" href="/calls">Clear Filters</a>{% endif %}
 </form>
-<section class="card" aria-label="Calls">
-  {% if not rows %}<p class="empty">No calls match.</p>{% else %}
-  <table class="table table-long">
+<section class="card" aria-labelledby="calls-count">
+  <header class="card-head">
+    <h2 id="calls-count" class="tnum">{% if total %}{{ first + 1 }}–{{ first + rows|length }} of {{ total|num }} calls{% else %}No calls{% endif %}</h2>
+    {% if total %}<p class="faint small tnum">{{ ok_pct }}% succeeded{% if median is not none %} · median {{ median|num }}&nbsp;ms{% endif %}</p>{% endif %}
+  </header>
+  {% if not rows %}<p class="empty">{% if filters.values()|select|list %}No calls match these filters. <a class="link" href="/calls">Clear them</a>.{% else %}No calls yet. They show here as soon as a consumer uses the pool.{% endif %}</p>{% else %}
+  <table class="table table-calls">
     <thead><tr><th scope="col">Time</th><th scope="col">Key</th><th scope="col">Group</th><th scope="col">Served by</th><th scope="col">Status</th><th scope="col" class="num">Latency</th><th scope="col" class="num">Tokens</th></tr></thead>
     <tbody>
     {% for c in rows %}
     <tr>
-      <td data-label="Time" class="tnum">{{ c.ts|when }}</td>
+      <td data-label="Time" class="tnum">{{ c.ts|stamp }}</td>
       <td data-label="Key">{{ c.key or "—" }}</td>
       <td data-label="Group"><code translate="no">{{ c.group or "—" }}</code></td>
       <td data-label="Served by"><span class="mono" translate="no">{{ c.deployment or "router" }}</span>{% if c.diverted %} <span class="chip chip-near"><span class="chip-dot" aria-hidden="true"></span>diverted</span>{% endif %}</td>
       <td data-label="Status">{% if c.status and c.status < 400 %}<span class="ok tnum">{{ c.status }}</span>{% else %}<span class="err tnum">{{ c.status }}</span>{% endif %}</td>
-      <td data-label="Latency" class="num tnum">{{ c.latency_ms|num }} ms</td>
+      <td data-label="Latency" class="num tnum">{{ c.latency_ms|num }}&nbsp;ms</td>
       <td data-label="Tokens" class="num tnum">{{ c.tokens|num }}</td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
+  {% if prev or next %}
+  <nav class="pager" aria-label="Older and newer calls">
+    {% if prev %}<a class="btn btn-small" href="{{ prev }}" rel="prev">‹ Newer</a>{% else %}<span></span>{% endif %}
+    {% if next %}<a class="btn btn-small" href="{{ next }}" rel="next">Older ›</a>{% endif %}
+  </nav>
+  {% endif %}
   {% endif %}
 </section>
 {% endblock %}
